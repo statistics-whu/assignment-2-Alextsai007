@@ -1,0 +1,1000 @@
+---
+title: "2nd_assignment"
+author: "Cai Yadong"
+date: "2024-11-07"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+---
+
+```{r setup, include = FALSE,echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE,error = FALSE, warning = FALSE, message = FALSE,
+                      out.width = "100%", split = FALSE, fig.align = "center")
+
+#load library
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(readxl)
+library(readr)
+library(caret)
+library(pROC)
+```
+
+# The second homework for MEM
+
+## Question 1: BigBangTheory
+The Big Bang Theory, a situation comedy featuring Johnny Galecki, Jim Parsons, and Kaley Cuoco-Sweeting, is one of the most-watched programs on network television. The first two episodes for the 2011–2012 season premiered on September 22, 2011; the first episode attracted 14.1 million viewers and the second episode attracted 14.7 million viewers. The attached data file BigBangTheory shows the number of viewers in millions for the first 21 episodes of the 2011–2012 season (the Big Bang theory website, April 17, 2012).
+
+### a. Compute the minimum and the maximum number of viewers.
+
+```{r include=FALSE}
+#download and review data "BigBangTheory"
+path1 <- "C:/Users/caial/Desktop/R_Store/作业_陈文波 商务统计/2nd_assignment/BigBangTheory.csv"
+bigbangtheory <- read.csv(path1)
+str(bigbangtheory)
+```
+
+```{r echo=FALSE}
+#Computer the minimum of viewers
+min(bigbangtheory$Viewers..millions.)
+
+#Computer the maximum of viewers
+max(bigbangtheory$Viewers..millions.)
+```
+
+### b. Compute the mean, median, and mode.
+
+```{r}
+#Computer the mean of viewers
+mean(bigbangtheory$Viewers..millions.)
+
+#Computer the median of viewers
+median(bigbangtheory$Viewers..millions.)
+
+#Computer the mode of viewers
+mode_value <- bigbangtheory$Viewers..millions. %>% 
+  as_tibble() %>%
+  count(value = value) %>%
+  filter(n == max(n)) %>%
+  pull(value)
+mode_value
+```
+
+### c. Compute the first and third quartiles.
+
+```{r echo=FALSE}
+quantile(bigbangtheory$Viewers..millions., probs = c(0.25, 0.75))
+```
+
+### d. has viewership grown or declined over the 2011–2012 season? Discuss.
+
+Overall, viewership has grown over a long time from Sep 2011 to Feb 2012 and declined quickly in Mar and Apr. You can know it based on the grey trend dashed line in below chat. However, during this period, there were also several fluctuations in the number of viewers. In the beginning, it has declined from Sep to Oct in 2011. Then it has grown from Oct 20 to Nov, and got a higher viewer record at 16 millions on Nov 3, 2011. After that, it has declined again until a lower record at 14 millions on Dec 8, 2011. In the period of Christmas and New Year's Day, there is no "Big bang theory" scheduled. After that, it has remained a higher viewers in Jan and Feb, 2012. Especially on Feb 2, 2012, it got a highest viewer record at 16.5 millions. With the end of winter and warming weather, the viewers has been declined again and again until at 13.3 millions on Apr 5, 2012.
+
+```{r}
+#convert Air.Date to Date
+bigbangtheory2 <- bigbangtheory %>% 
+  mutate(Air_Date = as.Date(bigbangtheory$Air.Date, format = "%B %d, %Y"))
+
+#trend chart based on Air_Date
+ggplot(bigbangtheory2, aes(x = Air_Date, y = Viewers..millions.)) +
+  geom_line(stat = "identity", position = "identity") +
+  geom_text(aes(label = Air_Date), vjust = -1, hjust = 0.5, size = 3) +
+  scale_x_date(date_labels = "%Y/%m/%d") +
+  geom_smooth(method = "loess", se = FALSE, col = "grey", linetype = "dashed") 
+```
+
+## Question 2: NBAPlayerPts.
+CbSSports.com developed the Total Player Rating system to rate players in the National Basketball Association (NBA) based on various offensive and defensive statistics. The attached data file NBAPlayerPts shows the average number of points scored per game (PPG) for 50 players with the highest ratings for a portion of the 2012–2013 NBA season (CbSSports.com website, February 25, 2013). Use classes starting at 10 and ending at 30 in increments of 2 for PPG in the following.
+
+### a. Show the frequency distribution.
+
+```{r include=FALSE}
+#download and review data "NBAPlayerPts"
+
+path2 <- "C:/Users/caial/Desktop/R_Store/作业_陈文波 商务统计/2nd_assignment/NBAPlayerPts.csv"
+nbaplayerpts <- read.csv(path2)
+str(nbaplayerpts)
+```
+
+```{r}
+#the frequency distribution of PPG
+
+ggplot(nbaplayerpts, aes(x = PPG)) +
+  geom_histogram(binwidth = 2, color = "black", fill = "lightblue", alpha = 0.5) +
+  scale_x_continuous(limits = c(10, 30), breaks = seq(10, 30, by = 2)) + # 设置X轴的刻度从10到30，间隔为2
+  labs(title = "NBA Players Points Per Game (PPG) Histogram",
+       x = "PPG",
+       y = "Frequency") 
+```
+
+
+### b. Show the relative frequency distribution.
+
+```{r}
+ggplot(nbaplayerpts, aes(x = PPG)) +
+  geom_histogram(binwidth = 2,  color = "black", fill = "lightblue", alpha = 0.5, 
+                 aes(y = ..density..)) +  # 显示相对频率
+  scale_x_continuous(limits = c(10, 30),  # 设置X轴的显示范围
+                     breaks = seq(10, 30, by = 2)) +  # 设置X轴的刻度从10到30，间隔为2
+  labs(title = "NBA Players Points Per Game (PPG) Relative Frequency Distribution",
+       x = "Points per Game (PPG)",
+       y = "Relative Frequency")
+```
+
+### c. Show the cumulative percent frequency distribution.
+
+```{r}
+ggplot(nbaplayerpts, aes(x = PPG)) +
+  stat_ecdf(geom = "step",  # 使用阶梯图来表示累积分布
+            color = "black", size = 1) + 
+  scale_x_continuous(limits = c(10, 30),  # 设置X轴的显示范围
+                     breaks = seq(10, 30, by = 2)) +  # 设置X轴的刻度从10到30，间隔为2
+  scale_y_continuous(labels = scales::percent) +  # 将Y轴标签转换为百分比格式
+  labs(title = "NBA Players Points Per Game (PPG) Cumulative Percent Frequency Distribution",
+       x = "Points per Game (PPG)",
+       y = "Cumulative Percent Frequency") 
+```
+
+### d. Develop a histogram for the average number of points scored per game.
+
+```{r}
+ggplot(nbaplayerpts, aes(x = PPG)) +
+  geom_histogram(binwidth = 2,  # You can adjust the bin width as needed
+                 color = "black",  fill = "lightblue",  alpha = 0.5) + 
+  scale_x_continuous(limits = c(10, 30), breaks = seq(10, 30, by = 2)) + # 设置X轴的刻度从10到30，间隔为2
+  labs(title = "Average Number of Points Scored Per Game (PPG)",
+       x = "Points per Game (PPG)",
+       y = "Number of Players")
+```
+
+### e. Do the data appear to be skewed? Explain.
+
+The frequency distribution is right skewed as its skewness(see below) is over 0.
+```{r}
+#计算偏度
+library(e1071)
+skewness(nbaplayerpts$PPG, na.rm = TRUE)
+```
+
+### f. What percentage of the players averaged at least 20 points per game?
+
+```{r}
+over_20 <- nbaplayerpts %>% 
+  filter(PPG > 20)
+paste0(round((count(over_20) / count(nbaplayerpts)) * 100), "%")
+```
+
+## Question 3: A researcher reports survey results by stating that the standard error of the mean is 20. The population standard deviation is 500.
+
+### a. How large was the sample used in this survey?
+
+```{r} 
+n <- (500 / 20) ^ 2 #SE=σ/(n^0.5)
+n
+```
+
+### b. What is the probability that the point estimate was within ±25 of the population mean?
+
+```{r}
+Z <- 25 / 20 #Z=(X-μ)/SE
+paste0(round((pnorm(1.25) - pnorm(-1.25)) * 100), "%")
+```
+
+## Question 4: Young Professional Magazine
+
+Young Professional magazine was developed for a target audience of recent college graduates who are in their first 10 years in a business/professional career. In its two years of publication, the magazine has been fairly successful. Now the publisher is interested in expanding the magazine’s advertising base. Potential advertisers continually ask about the demographics and interests of subscribers to young Professionals. To collect this information, the magazine commissioned a survey to develop a profile of its subscribers. The survey results will be used to help the magazine choose articles of interest and provide advertisers with a profile of subscribers. As a new employee of the magazine, you have been asked to help analyze the survey results.
+
+Some of the survey questions follow:
+
+What is your age?
+
+Are you: Male_________ Female___________
+
+Do you plan to make any real estate purchases in the next two years?
+
+Yes______ No______
+
+What is the approximate total value of financial investments, exclusive of your
+
+home, owned by you or members of your household?
+
+How many stock/bond/mutual fund transactions have you made in the past year?
+
+Do you have broadband access to the Internet at home? Yes______ No______
+
+Please indicate your total household income last year. ___________
+
+Do you have children? Yes______ No______
+
+The file entitled Professional contains the responses to these questions.
+
+Managerial Report:
+
+Prepare a managerial report summarizing the results of the survey. In addition to statistical summaries, discuss how the magazine might use these results to attract advertisers. You might also comment on how the survey results could be used by the magazine’s editors to identify topics that would be of interest to readers. Your report should address the following issues, but do not limit your analysis to just these areas.
+
+### a. Develop appropriate descriptive statistics to summarize the data.
+
+```{r include=FALSE}
+#download data "professional" and remove "N/A"
+path4 <- "C:/Users/caial/Desktop/R_Store/作业_陈文波 商务统计/2nd_assignment/Professional.csv"
+professional <- read.csv(path4)
+str(professional)
+professional_cleaned <- professional %>% 
+  select(Age:Have.Children.) %>% 
+  drop_na()
+```
+View cleaned table "professional_cleaned"
+```{r}
+str(professional_cleaned)
+```
+
+Summary "Age", "Value.of.Investments....", "Number.of.Transactions", "Household.Income...."
+
+```{r}
+#summary "Age"
+summary(professional_cleaned$Age)
+
+#summary "Value.of.Investments...."
+summary(professional$Value.of.Investments....)
+
+#summary "Number.of.Transactions"
+summary(professional$Number.of.Transactions)
+
+#summary "Household.Income...."
+summary(professional$Household.Income....)
+```
+
+Check percentage of "Male" and "Female" of "Gender"
+```{r}
+#check percentage of "Male" of "Gender"
+gender_prop1 <- prop.table(table(professional_cleaned$Gender))
+male_percentage1 <- paste0(round(gender_prop1["Male"] * 100), "%")
+male_percentage1
+```
+Check percentage of "Yes" and "No" of "Real.Estate.Purchases."
+```{r}
+#check percentage of "Yes" of "Real.Estate.Purchases."
+gender_prop2 <- prop.table(table(professional_cleaned$Real.Estate.Purchases.))
+male_percentage2 <- paste0(round(gender_prop2["Yes"] * 100), "%")
+male_percentage2 
+```
+Check percentage of “Yes" and "No" of "Broadband.Access."
+```{r}
+#check percentage of “Yes" of "Broadband.Access."
+gender_prop3 <- prop.table(table(professional_cleaned$Broadband.Access.))
+male_percentage3 <- paste0(round(gender_prop3["Yes"] * 100), "%")
+male_percentage3 
+```
+Check percentage of "Yes" and "No" of "Have.Children."
+```{r}
+#check percentage of "Yes" of "Have.Children."
+gender_prop4 <- prop.table(table(professional_cleaned$Have.Children.))
+male_percentage4 <- paste0(round(gender_prop4["Yes"] * 100), "%")
+male_percentage4
+```
+
+### b. Develop 95% confidence intervals for the mean age and household income of subscribers.
+
+```{r}
+age_ci <- t.test(professional_cleaned$Age, conf.level = 0.95)
+age_ci$conf.int
+
+household_income_ci <- t.test(professional_cleaned$Household.Income...., conf.level = 0.95)
+household_income_ci$conf.int
+```
+
+### c. Develop 95% confidence intervals for the proportion of subscribers who have broadband access at home and the proportion of subscribers who have children.
+
+```{r}
+#95% confidence intervals for the proportion of subscribers who have broadband access at home
+broadband_access_ci <- prop.test(sum(professional_cleaned$Broadband.Access. == "Yes"), 
+  length(professional_cleaned$Broadband.Access.), conf.level = 0.95)
+broadband_access_ci$conf.int
+
+#95% confidence intervals for the proportion of subscribers who have children
+have_children_ci <- prop.test(sum(professional_cleaned$Have.Children. == "Yes"), 
+  length(professional_cleaned$Have.Children.), conf.level = 0.95)
+have_children_ci$conf.int
+
+```
+
+### d. Would Young Professional be a good advertising outlet for online brokers? Justify your conclusion with statistical data.
+
+Yes, "Young Professional" be a good advertising outlet for online brokers, especially for financial investments brokers.
+
+In general, young people have three major investment tendencies, with the required amounts ranging from large to small: real estate(house), financial investments, and children education.
+
+Firstly, "Young Professional" described the family situation, willingness to buy a house, annual income, and financial investment willingness of young people (20-40), as well as the feasibility of online transactions.
+
+Secondly, from the results of the survey, we can know the investment tendencies for young people and their actual affordability online.
+
+Investment Tendencies:
+
+a, The investment tendencies on real estate
+  44% of young people have the investment tendencies on real estate(house).(95% confidence intervals from 39% ~ 49%)
+b, The investment tendencies on Financial
+  Median of the approximate total value of Financial investment from young people is 24,800. (Range 0 ~ 133K)
+  Median of No. of Transactions on Financial investment is 6 in the past year.
+c, The investment tendencies on children education
+  53% of young people have children. (95% confidence intervals from 48% ~ 58%)
+
+Nearly half of the people have the willingness to invest in real estate, the vast majority have a tendency and practical experience in Financial investment, and more than half of them invest in children education with responsibility.
+ 
+Actual Affordability Online:
+
+  Median of total household income is 66050.
+  62% of young people have the ability to invest online. (95% confidence intervals from 57% ~ 67%)
+  
+Basically, for most of young people, they are not affordable to invest in real estate with current total household income.
+However, they have the ability and willing in Financial investment. If they have children, they can consider investing a small portion of their income in children education.
+
+In a summary, "Young Professional" be a excellent advertising outlet for online brokers, especially for financial investments brokers.
+On the other hand, for Children education brokers, it's also a good advertising outlet. They can also find their potenial customer from there.
+
+### e. Would this magazine be a good place to advertise for companies selling educational software and computer games for young children?
+
+Exactly, yes. As I said from last question, more than half of young parents have ability to invest on their children with variant purpose.
+Educational software and computer games are two of the items.
+
+### f. Comment on the types of articles you believe would be of interest to readers of Young Professional.
+
+Types of Articles of Interest to Readers of "Young Professional"
+
+Young professionals, typically in the early to mid-stages of their careers, have a keen interest in a variety of topics that can support their professional growth, financial well-being, and children education. Here are some article themes that could be particularly appealing to this demographic:
+
+Career Development and Skill Enhancement to increase personal income
+
+Career Planning: Guidance on setting and achieving both short-term and long-term career goals, including strategies for career advancement and personal branding.
+Skill Enhancement: Information on the latest vocational skills training resources, such as online courses, seminars, and workshops, to stay relevant and competitive.
+Leadership Development: Tips and insights on improving leadership skills, including effective team management, project management, and communication techniques.
+Industry Trends: Analysis of the latest trends and developments within specific industries, helping young professionals to stay informed and maintain their edge in the job market.
+
+Personal Finance and Investment
+
+Financial Planning: Advice on creating a personal budget, managing debt, and establishing an emergency fund to build a strong financial foundation.
+Introduction to Investment: An overview of basic investment concepts, such as stocks, bonds, and mutual funds, along with practical steps on how to start investing.
+Real Estate Investment: Discussion on the pros and cons of buying versus renting, and strategies for building wealth through real estate investments.
+Retirement Planning: Early retirement planning tips, including the importance of starting a retirement account and choosing the right pension or retirement plan.
+
+Children Education and Family Financial Planning
+
+Online Education Resources: Recommendations for high-quality online education platforms and applications that can help children supplement their learning outside of school hours.
+Extracurricular Tutoring: Exploration of the benefits and considerations of enrolling children in extracurricular tutoring, and advice on selecting the right tutoring services.
+Education Savings Plans: Introduction to various education savings plans, such as the 529 Plan in the USA, and other financial instruments like education insurance, to help parents prepare for their children future education costs.
+Financial Planning for Education: Strategies for integrating education expenses into the family budget, ensuring that there is adequate funding for children education while maintaining overall financial stability.
+
+These articles would not only provide valuable information but also actionable steps that young professionals can take to enhance their careers, manage their finances, and support their families' educational needs. By addressing these key areas, "Young Professional" can become a go-to resource for those looking to navigate the complexities of modern professional and personal life.
+
+## Question 5: Quality Associate, Inc. 
+
+  Quality associates, inc., a consulting firm, advises its clients about sampling and statistical procedures that can be used to control their manufacturing processes. in one particular application, a client gave Quality associates a sample of 800 observations taken during a time in which that client’s process was operating satisfactorily. the sample standard deviation for these data was .21; hence, with so much data, the population standard deviation was assumed to be .21. Quality associates then suggested that random samples of size 30 be taken periodically to monitor the process on an ongoing basis. by analyzing the new samples, the client could quickly learn whether the process was operating satisfactorily. when the process was not operating satisfactorily, corrective action could be taken to eliminate the problem. the design specification indicated the mean for the process should be 12. the hypothesis test suggested by Quality associates follows.
+  H0:u = 12H1:u <> 12
+  Corrective action will be taken any time H0 is rejected.
+  
+  Data are available in the data set Quality.
+  
+  Managerial Report
+  
+### a. Conduct a hypothesis test for each sample at the .01 level of significance and determine what action, if any, should be taken. Provide the p-value for each test.
+
+```{r include=FALSE}
+#download data "quality"
+path5 <- "C:/Users/caial/Desktop/R_Store/作业_陈文波 商务统计/2nd_assignment/Quality.csv"
+quality <- read.csv(path5)
+str(quality)
+```
+
+```{r}
+# define hypothesis_test function
+hypothesis_test <- function(sample_data, mu = 12, sigma = 0.21, n = 30, alpha = 0.01) {
+  # T test for one sample
+  test_result <- t.test(sample_data, mu = mu, alternative = "two.sided",
+                        conf.level = 1 - alpha)
+  # Return P value and result
+  p_value <- test_result$p.value
+  conclusion <- ifelse(p_value < alpha, "Reject H0", "Do not reject H0")
+  return(list(p_value = p_value, conclusion = conclusion))
+}
+
+results <- lapply(quality, function(x) hypothesis_test(x))
+results
+
+```
+
+### b. compute the standard deviation for each of the four samples. does the assumption of .21 for the population standard deviation appear reasonable?
+
+```{r}
+# compute the standard deviation for each of the four samples
+sample_sd <- sapply(quality, sd, na.rm = TRUE)
+sample_sd
+```
+
+```{r}
+# assumed population standard deviation
+assumed_sigma <- 0.21
+
+#Compare the calculated sample standard deviation with the assumed population standard deviation
+comparison <- sapply(sample_sd, function(sd) abs(sd - assumed_sigma) < 7 * (assumed_sigma / sqrt(nrow(quality))))
+comparison
+```
+From above comparison result, the assumption of 0.21 for the population standard deviation appears reasonable.
+
+### c. compute limits for the sample mean x― around μ=12 such that, as long as a new sample mean is within those limits, the process will be considered to be operating satisfactorily. if x― exceeds the upper limit or if x― is below the lower limit, corrective action will be taken. these limits are referred to as upper and lower control limits for quality control purposes.
+
+```{r}
+mu <- 12
+sigma <- 0.21
+n <- 30
+std_error <- sigma / sqrt(n)
+UCL <- mu + 3 * std_error
+LCL <- mu - 3 * std_error
+cat("Upper Control Limit (UCL):", UCL, "\n")
+cat("Lower Control Limit (LCL):", LCL, "\n")
+```
+
+### d. discuss the implications of changing the level of significance to a larger value. what mistake or error could increase if the level of significance is increased?
+When the level of significance α is increased, essentially, it is easier to reject the null hypothesis (H0). 
+This has several important implications:
+Increased probability of Type I Error
+Decreased probability of Type II Error
+As α increases, the statistical power of the test also increases
+In some fields, such as medical research, a higher α might lead to more frequent false positive results, which can have serious consequences.
+
+## Question 6: Vacation occupancy rates were expected to be up during March 2008 in Myrtle Beach, South Carolina (the sun news, February 29, 2008). Data in the file Occupancy (Attached file Occupancy) will allow you to replicate the findings presented in the newspaper. The data show units rented and not rented for a random sample of vacation properties during the first week of March 2007 and March 2008.
+
+### a. Estimate the proportion of units rented during the first week of March 2007 and the first week of March 2008.
+
+```{r include=FALSE}
+#download data "quality" and clean up data
+path6 <- "C:/Users/caial/Desktop/R_Store/作业_陈文波 商务统计/2nd_assignment/Occupancy.csv"
+occupany <- read.csv(path6)
+str(occupany)
+#setup first row as variant name
+colnames(occupany) <- as.character(unlist(occupany[1, ]))
+#delete previous first row
+occupany <- occupany[-1, ]
+#check data again
+str(occupany)
+head(occupany)
+```
+
+```{r}
+#check the percentage of rented rooms in Mar 2007, na is not included, " " is not considered
+non_na_2007 <- na.omit(occupany$`March 2007`)
+yes_count_2007 <- sum(non_na_2007 == "Yes")
+no_count_2007 <- sum(non_na_2007 == "No")
+percentage_2007 <- paste0(round(yes_count_2007 / (yes_count_2007 + no_count_2007) * 100, 2), "%")
+percentage_2007
+
+#check the percentage of rented rooms in Mar 2008, na is not included, " " is not considered
+non_na_2008 <- na.omit(occupany$`March 2008`)
+yes_count_2008 <- sum(non_na_2008 == "Yes")
+no_count_2008 <- sum(non_na_2008 == "No")
+percentage_2008 <- paste0(round(yes_count_2008 / (yes_count_2008 + no_count_2008) * 100, 2), "%")
+percentage_2008
+```
+
+### b. Provide a 95% confidence interval for the difference in proportions.
+
+```{r}
+#95% confidence intervals for the proportion in Mar 2007
+#remove values which are not "Yes" or "No"
+real_value_2007 <- occupany %>%
+  filter(`March 2007` %in% c("Yes", "No")) %>%
+  pull(`March 2007`)
+
+yes_count_2007 <- sum(real_value_2007 == "Yes")
+total_count_2007 <- length(real_value_2007)
+rented_2007_ci <- prop.test(yes_count_2007, total_count_2007, conf.level = 0.95)
+rented_2007_ci$conf.int 
+
+#95% confidence intervals for the proportion in Mar 2008
+#remove values which are not "Yes" or "No"
+real_value_2008 <- occupany %>%
+  filter(`March 2008` %in% c("Yes", "No")) %>%
+  pull(`March 2008`)
+
+yes_count_2008 <- sum(real_value_2007 == "Yes")
+total_count_2008 <- length(real_value_2008)
+rented_2008_ci <- prop.test(yes_count_2008, total_count_2008, conf.level = 0.95)
+rented_2008_ci$conf.int 
+```
+
+### c. On the basis of your findings, does it appear March rental rates for 2008 will be up from those a year earlier?
+
+No, the data does not appear that March rental rates for 2008 will be up from those a year earlier.
+
+From the proportion of units rented during the first week of March 2007 and the first week of March 2008, it seems like March rental rates for 2008 will be up from those a year earlier. 
+
+However, there are some na or unknown data in 2008. If we compare the total number of rented rooms between 2007 and 2008, they are same as 70(see below data).
+We cannot determine these unknown data, so we cannot firmly believe March rental rates for 2008 will be up from those a year earlier.
+
+Total March rental rooms in March 2007
+```{r}
+yes_count_2007
+```
+Total March rented rooms in March 2008
+```{r}
+yes_count_2008
+```
+
+## Question 7: Air Force Training Program (data file: Training)
+
+An air force introductory course in electronics uses a personalized system of instruction whereby each student views a videotaped lecture and then is given a programmed instruction text. the students work independently with the text until they have completed the training and passed a test. Of concern is the varying pace at which the students complete this portion of their training program. Some students are able to cover the programmed instruction text relatively quickly, whereas other students work much longer with the text and require additional time to complete the course. The fast students wait until the slow students complete the introductory course before the entire group proceeds together with other aspects of their training.
+
+A proposed alternative system involves use of computer-assisted instruction. In this method, all students view the same videotaped lecture and then each is assigned to a computer terminal for further instruction. The computer guides the student, working independently, through the self-training portion of the course.
+
+To compare the proposed and current methods of instruction, an entering class of 122 students was assigned randomly to one of the two methods. one group of 61 students used the current programmed-text method and the other group of 61 students used the proposed computer-assisted method. The time in hours was recorded for each student in the study. Data are provided in the data set training (see Attached file).
+
+Managerial Report
+
+### a. use appropriate descriptive statistics to summarize the training time data for each method. what similarities or differences do you observe from the sample data?
+
+From below descriptive statistics, the Median score for these two methods are same.
+However, the mean score of proposed method is a litter higher than the other. 
+On the other side, the range for proposed method is lower than current method.
+
+```{r include=FALSE}
+#download data "Training" and check it
+path7 <- "C:/Users/caial/Desktop/R_Store/作业_陈文波 商务统计/2nd_assignment/Training.csv"
+training <- read.csv(path7)
+str(training)
+```
+
+```{r}
+summary(training)
+```
+
+### b. Comment on any difference between the population means for the two methods. Discuss your findings.
+The population mean for proposed method is a little higher than the one for current method.The range of score for proposed method is lower.
+We can have a basic conclusion, the proposed method is better as the scores are higher and more stable.
+
+### c. compute the standard deviation and variance for each training method. conduct a hypothesis test about the equality of population variances for the two training methods. Discuss your findings.
+
+Compute the standard deviation for current and proposed method
+```{r}
+#standard deviation
+sd(training$Current)
+sd(training$Proposed)
+```
+Compute the variance for current and proposed method
+
+```{r}
+#variance
+var(training$Current)
+var(training$Proposed)
+```
+
+Hypothesis test about the equality of population variances for the two training methods
+H0:S1 = S2, H1: S1 <> S2
+
+```{r echo=FALSE}
+#F-test for two individual test result, H0:S1 = S2, H1: S1 <> S2
+f_test_result <- var.test(training$Current, training$Proposed)
+f_test_result
+```
+
+Evan the standard deviation and variance of proposed method is lower than the standard deviation and variance of current method,
+F test result shows, p-value 0.000578 is less than 0.05. H0 is rejected(H0:S1 = S2, H1: S1 <> S2), the population variances for these two methods are not equal.
+
+### d. what conclusion can you reach about any differences between the two methods? what is your recommendation? explain.
+
+The proposed method is better than current one. Not only the score of students are more stable with similar mean score, the proposed method can save time for some students.
+
+### e. can you suggest other data or testing that might be desirable before making a final decision on the training program to be used in the future?
+
+A same group of students take part in two times for current method and proposed method.
+This testing can remove the variance differences between samples themselves.
+
+## Question 8: The Toyota Camry is one of the best-selling cars in North America. The cost of a previously owned Camry depends upon many factors, including the model year, mileage, and condition. To investigate the relationship between the car’s mileage and the sales price for a 2007 model year Camry, Attached data file Camry show the mileage and sale price for 19 sales (Pricehub website, February 24, 2012).
+
+### a. Develop a scatter diagram with the car mileage on the horizontal axis and the price on the vertical axis.
+
+```{r include=FALSE}
+#download data "Camry"
+path8 <- "C:/Users/caial/Desktop/R_Store/作业_陈文波 商务统计/2nd_assignment/Camry.csv"
+camry <- read.csv(path8)
+str(camry)
+```
+
+```{r}
+ggplot(camry, mapping = aes(x = Miles..1000s., y = Price...1000s.)) +
+  geom_point() +
+  geom_smooth(method = 'loess', se = FALSE)
+```
+
+### b. what does the scatter diagram developed in part (a) indicate about the relationship between the two variables?
+
+There appears to be a negative relationship between price and miles that can be approximated by a straight line.
+An argument could be made the relationship maybe curve linear at some point.
+
+### c. Develop the estimated regression equation that could be used to predict the price ($1000s) given the miles (1000s).
+
+```{r}
+b1 <- sum((camry$Miles..1000s.-mean(camry$Miles..1000s.))*(camry$Price...1000s.-mean(camry$Price...1000s.)))/sum((camry$Miles..1000s.-mean(camry$Miles..1000s.))^2)
+b0 <- mean(camry$Price...1000s.)-b1*mean(camry$Miles..1000s.)
+
+# predict
+y <- b0+b1*4
+
+camry_model <- lm(Price...1000s. ~ Miles..1000s., data = camry)
+
+summary(camry_model)
+```
+Based on the above output, we can write the regression equation:
+Price...1000s. = 16.47 - 0.059 * Miles..1000s.
+
+### d. Test for a significant relationship at the .05 level of significance.
+
+Setup H0: β1 = 0， no relationship between price and miles, H1: β1 <> 0， there is relationship between price and miles
+
+```{r}
+p_value <- summary(camry_model)$coefficients["Miles..1000s.", "Pr(>|t|)"]
+
+if (p_value < 0.05) {
+  cat("At the .05 level of significance，reject H0. There is relationship between price and miles。 \n")
+  cat("P value:", p_value, "\n")
+} else {
+  cat("At the .05 level of significance，Accept H0. There is no relationship between price and miles。 \n")
+  cat("P value:", p_value, "\n")
+}
+```
+
+### e. Did the estimated regression equation provide a good fit? Explain.
+
+R-squared: 0.5387, indicating that the model explained 53.87% of the price changes. Although not very high, it is still a reasonable value.
+Adjusted R-squared: 0.5115, also reasonable.
+F-statistic: 19.85, p-value 0.0003475, indicating overall significance of the model.
+Significance of coefficients: The p-values of intercept and mileage are both very small, indicating that they are both significant.
+Residual standard error: 1.541, relatively small, indicating that the difference between the predicted and actual values of the model is small
+
+```{r}
+#Residual analysis
+par(mfrow = c(2, 2))
+plot(camry_model, which = 1)  # Residual vs. fitted value
+plot(camry_model, which = 2)  # QQ plot of standardized residuals
+plot(camry_model, which = 3)  # Square root of standardized residuals vs. fitted value
+plot(camry_model, which = 4)  # Standardized residuals vs. independent variables
+```
+
+However, from Residual analysis results, there may be two concerns.
+The model systematically underestimates the value of the dependent variable.
+There may be a nonlinear relationship between the dependent variable and the independent variable.
+
+### f. Provide an interpretation for the slope of the estimated regression equation.   
+
+Slope -0.059 indicates that for every additional 1000 miles of driving, the price of the car is expected to decrease by $59. This slope is statistically significant, reflecting the negative impact of mileage on car prices
+
+### g. Suppose that you are considering purchasing a previously owned 2007 Camry that has been driven 60,000 miles. Using the estimated regression equation developed in part (c), predict the price for this car. Is this the price you would offer the seller.
+
+According to the regression equation, the predicted price is
+```{r}
+16.47 - 0.059 * 60
+```
+thousand dollars.
+
+In second-hand car market, sellers expect a certain degree of negotiation space. I can use the predicted price as a reference point and adjust the quotation based on specific conditions such as market conditions, vehicle conditions, personal preferences, etc
+
+## Question 9: Attachment WE.xlsx is customer data of an Internet service provider that provides website services. The data includes the performance of 6347 customers on 11 indicators. Among them, 0 in the "churned" indicator churned customers, 1 indicates non-churned customers, and the meanings of other indicators depend on the variable. 
+
+### a. By using visualization to explore and compare the behavioral characteristics of churned customers versus non-churned customers, can you identify significant differences between the two groups across several key metrics?
+
+Through the following visual comparisons, there are significant differences between the behaviors of churned and non-churned customers in terms of the current month's customer happiness index, the change in the customer happiness index compared to the previous month, the current month's service priority, and the duration of customer usage.
+
+```{r include=FALSE}
+#下载数据表"We"
+path9 <- "C:/Users/caial/Desktop/R_Store/作业_陈文波 商务统计/2nd_assignment/WE.xlsx"
+we <- read_xlsx(path9)
+str(we)
+```
+
+```{r}
+#比较"当月客户幸福指数"
+ggplot(we, aes(x = "", y = 当月客户幸福指数, fill = 流失)) +
+  geom_boxplot() +
+  scale_fill_gradient2(low = "lightblue", high = "gray", midpoint = 0.5) + 
+  facet_wrap(~ 流失, ncol = 2)
+  labs(title = "比较流失客户和非流失客户的当月客户幸福指数(1-流失，0-非流失)",
+       x = "",
+       y = "当月客户幸福指数") +
+  theme_minimal() 
+  
+#比较 "客户幸福指数相比上月变化"
+ggplot(we, aes(x = "", y = 客户幸福指数相比上月变化, fill = 流失)) +
+  geom_boxplot() +
+  scale_fill_gradient2(low = "lightblue", high = "gray", midpoint = 0.5) + 
+  facet_wrap(~ 流失, ncol = 2)
+  labs(title = "比较流失客户和非流失客户的客户幸福指数相比上月变化(1-流失，0-非流失)",
+       x = "",
+       y = "客户幸福指数相比上月变化") +
+  theme_minimal() 
+
+#比较 "当月客户支持"
+ggplot(we, aes(x = "", y = 当月客户支持, fill = 流失)) +
+  geom_boxplot() +
+  scale_fill_gradient2(low = "lightblue", high = "gray", midpoint = 0.5) + 
+  facet_wrap(~ 流失, ncol = 2)
+  labs(title = "比较流失客户和非流失客户的当月客户支持(1-流失，0-非流失)",
+       x = "",
+       y = "当月客户支持") +
+  theme_minimal() 
+
+#比较 "客户支持相比上月的变化"
+ggplot(we, aes(x = "", y = 客户支持相比上月的变化, fill = 流失)) +
+  geom_boxplot() +
+  scale_fill_gradient2(low = "lightblue", high = "gray", midpoint = 0.5) + 
+  facet_wrap(~ 流失, ncol = 2)
+  labs(title = "比较流失客户和非流失客户的客户支持相比上月的变化(1-流失，0-非流失)",
+       x = "",
+       y = "客户支持相比上月的变化") +
+  theme_minimal() 
+
+#比较 "当月服务优先级"
+ggplot(we, aes(x = "", y = 当月服务优先级, fill = 流失)) +
+  geom_boxplot() +
+  scale_fill_gradient2(low = "lightblue", high = "gray", midpoint = 0.5) + 
+  facet_wrap(~ 流失, ncol = 2)
+  labs(title = "比较流失客户和非流失客户的当月服务优先级(1-流失，0-非流失)",
+       x = "",
+       y = "当月服务优先级") +
+  theme_minimal() 
+
+#比较 "服务优先级相比上月的变化"
+ggplot(we, aes(x = "", y = 服务优先级相比上月的变化, fill = 流失)) +
+  geom_boxplot() +
+  scale_fill_gradient2(low = "lightblue", high = "gray", midpoint = 0.5) + 
+  facet_wrap(~ 流失, ncol = 2)
+  labs(title = "比较流失客户和非流失客户的服务优先级相比上月的变化(1-流失，0-非流失)",
+       x = "",
+       y = "服务优先级相比上月的变化") +
+  theme_minimal() 
+
+#比较 "当月登录次数"
+ggplot(we, aes(x = "", y = 当月登录次数, fill = 流失)) +
+  geom_boxplot() +
+  scale_fill_gradient2(low = "lightblue", high = "gray", midpoint = 0.5) + 
+  facet_wrap(~ 流失, ncol = 2)
+  labs(title = "比较流失客户和非流失客户的当月登录次数(1-流失，0-非流失)",
+       x = "",
+       y = "当月登录次数") +
+  theme_minimal() 
+  
+#比较 "博客数相比上月的变化"
+ggplot(we, aes(x = "", y = 博客数相比上月的变化, fill = 流失)) +
+  geom_boxplot() +
+  scale_fill_gradient2(low = "lightblue", high = "gray", midpoint = 0.5) + 
+  facet_wrap(~ 流失, ncol = 2)
+  labs(title = "比较流失客户和非流失客户的博客数相比上月的变化(1-流失，0-非流失)",
+       x = "",
+       y = "博客数相比上月的变化") +
+  theme_minimal() 
+
+#比较 "访问次数相比上月的增加"
+ggplot(we, aes(x = "", y = 访问次数相比上月的增加, fill = 流失)) +
+  geom_boxplot() +
+  scale_fill_gradient2(low = "lightblue", high = "gray", midpoint = 0.5) + 
+  facet_wrap(~ 流失, ncol = 2)
+  labs(title = "比较流失客户和非流失客户的访问次数相比上月的增加(1-流失，0-非流失)",
+       x = "",
+       y = "访问次数相比上月的增加") +
+  theme_minimal() 
+
+#比较 "客户使用期限"
+ggplot(we, aes(x = "", y = 客户使用期限, fill = 流失)) +
+  geom_boxplot() +
+  scale_fill_gradient2(low = "lightblue", high = "gray", midpoint = 0.5) + 
+  facet_wrap(~ 流失, ncol = 2)
+  labs(title = "比较流失客户和非流失客户的客户使用期限(1-流失，0-非流失)",
+       x = "",
+       y = "客户使用期限") +
+  theme_minimal() 
+  
+#比较 "访问间隔变化"
+ggplot(we, aes(x = "", y = 访问间隔变化, fill = 流失)) +
+  geom_boxplot() +
+  scale_fill_gradient2(low = "lightblue", high = "gray", midpoint = 0.5) + 
+  facet_wrap(~ 流失, ncol = 2)
+  labs(title = "比较流失客户和非流失客户的访问间隔变化(1-流失，0-非流失)",
+       x = "",
+       y = "访问间隔变化") +
+  theme_minimal() 
+  
+```
+
+### b. Verify whether the aforementioned differences are statistically significant through mean comparison.
+
+```{r include=FALSE}
+lost_customer <- filter(we, 流失 == 1)
+
+non_lost_customer <- we %>% 
+  filter(流失 == 0)
+```
+
+比较 当月客户幸福指数，前者为流失客户，后者为非流失客户
+```{r}
+summary(lost_customer$当月客户幸福指数)
+summary(non_lost_customer$当月客户幸福指数)
+```
+比较 客户幸福指数相比上月变化，前者为流失客户，后者为非流失客户
+```{r}
+summary(lost_customer$客户幸福指数相比上月变化)
+summary(non_lost_customer$客户幸福指数相比上月变化)
+```
+比较 当月服务优先级，前者为流失客户，后者为非流失客户
+```{r}
+summary(lost_customer$当月服务优先级)
+summary(non_lost_customer$当月服务优先级)
+```
+比较 客户使用期限，前者为流失客户，后者为非流失客户
+```{r}
+summary(lost_customer$客户使用期限)
+summary(non_lost_customer$客户使用期限)
+```
+
+比较均值后发现当月客户幸福指数，客户幸福指数相比上月变化，当月服务优先级与客户流失的关系显著，客户使用期限与客户流失关系不显著。
+
+### c. Use "churned" as the dependent variable and other variables that you consider important (based steps a and b) as independent variables to establish a regression equation for predicting whether a customer will churn.
+
+1, Exploratory Data Analysis: a. Examine the relationship between each independent variable and the dependent variable "churn".
+Review the density plots of each independent variable against the dependent variable "churn". It was found that the current month's customer happiness index, the change in the customer happiness index compared to the previous month, and the current month's service priority have a significant relationship with the dependent variable. (Refer to the detailed figures below for illustration.)
+
+Among other independent variables, the current month's customer support, the change in customer support compared to the previous month, the current month's service priority, the change in service priority compared to the previous month, the change in the number of blog posts compared to the previous month, the increase in visit count compared to the previous month, and the change in visit interval do not show a clear relationship with "churn". The duration of customer usage does not have a significant relationship with "churn". The data for the number of log-in in the current month contains anomalies (negative values) and cannot be used for reference.
+
+b. Select the current month's customer happiness index, the change in the customer happiness index compared to the previous month, and the current month's service priority based on their relationships with the dependent variable "churned".
+  
+```{r}
+ggplot(we, aes(x = 当月客户幸福指数, fill = factor(流失))) +
+  geom_density(alpha = 0.5) +
+  labs(title = "当月客户幸福指数和客户流失的密度图",
+       x = "当月客户幸福指数",
+       y = "密度",
+       fill = "流失")
+
+ggplot(we, aes(x = 客户幸福指数相比上月变化, fill = factor(流失))) +
+  geom_density(alpha = 0.5) +
+  labs(title = "客户幸福指数相比上月变化和客户流失的密度图",
+       x = "客户幸福指数相比上月变化",
+       y = "密度",
+       fill = "流失")
+
+ggplot(we, aes(x = 当月服务优先级, fill = factor(流失))) +
+  geom_density(alpha = 0.5) +
+  labs(title = "当月服务优先级和客户流失的密度图",
+       x = "当月服务优先级",
+       y = "密度",
+       fill = "流失")
+
+```
+
+2, Establish a Logistic Regression Model
+
+```{r}
+# 基于 a 和 b 两步的发现，选择重要的自变量
+selected_variables <- c("当月客户幸福指数", "客户幸福指数相比上月变化", "当月服务优先级")
+
+# 建立训练集和测试集
+set.seed(123)
+trainIndex <- createDataPartition(we$流失, p = 0.8, list = FALSE)
+train_data <- we[trainIndex, ]
+test_data <- we[-trainIndex, ]
+
+# 建立逻辑回归模型
+logistic_model <- glm(流失 ~ ., data = train_data[, c(selected_variables, "流失")], family = "binomial")
+
+# 查看模型摘要
+summary(logistic_model)
+```
+Intercept: -2.502641, Standard Error 0.095908, z-value -26.094, p-value < 2e-16. The intercept is highly significant (p-value < 0.001), indicating that when all independent variables are zero, the predicted log-odds of churn is -2.502641.
+Current Month's Customer Happiness Index: -0.004991, Standard Error 0.001111, z-value -4.494, p-value 6.99e-06. This variable is highly significant (p-value < 0.001), and the negative coefficient suggests that as the current month's customer happiness index increases, the probability of churn decreases.
+Change in Customer Happiness Index Compared to the Previous Month: -0.009400, Standard Error 0.002448, z-value -3.840, p-value 0.000123. This variable is also highly significant (p-value < 0.001), and the negative coefficient indicates that a decrease in the customer happiness index compared to the previous month increases the probability of churn.
+Current Month's Service Priority: -0.049181, Standard Error 0.060061, z-value -0.819, p-value 0.412874. This variable is not significant (p-value > 0.05), and the negative coefficient suggests that the current month's service priority has little effect on customer churn.
+Residual Deviance: 1993.0, Degrees of Freedom 5075. This is the deviance of the model after including the independent variables. The Residual Deviance is significantly lower than the Null Deviance, indicating that the independent variables make a significant contribution to the model.
+AIC (Akaike Information Criterion): 2001. A relatively small value, suggesting that the model fits the data well.
+
+3, Model Evaluation
+
+```{r}
+# 预测测试集
+predictions <- predict(logistic_model, newdata = test_data[, selected_variables], type = "response")
+predicted_classes <- ifelse(predictions > 0.5, 1, 0)
+
+# 计算准确率
+accuracy <- mean(predicted_classes == as.numeric(test_data$流失) - 1)
+cat("Accuracy:", accuracy, "\n")
+
+# 混淆矩阵
+confusion_matrix <- table(Predicted = predicted_classes, Actual = as.numeric(test_data$流失) - 1)
+print(confusion_matrix)
+
+# AUC-ROC 曲线
+roc_curve <- roc(as.numeric(test_data$流失) - 1, predictions)
+plot(roc_curve, main = "ROC Curve")
+auc_value <- auc(roc_curve)
+cat("AUC:", auc_value, "\n")
+
+```
+Accuracy: 0.9495268
+This high accuracy indicates that the model performs very well overall on the test set. Accuracy is the proportion of all correct predictions, including both correctly predicted positive (churned) and negative (non-churned) cases.
+True Negatives: 1204
+These are the actual non-churn customers that the model correctly predicted as non-churn.
+False Negatives: 64
+These are the actual churn customers that the model incorrectly predicted as non-churn.
+AUC (Area Under the ROC Curve): 0.623832
+This AUC value indicates that the model has relatively weak discriminatory power
+
+4，Based on the above results, modify the model by removing the insignificant independent variable "current month's service priority" and re-evaluate the model.
+
+```{r}
+selected_variables2 <- c("当月客户幸福指数", "客户幸福指数相比上月变化")
+
+# 建立逻辑回归模型2
+logistic_model2 <- glm(流失 ~ ., data = train_data[, c(selected_variables2, "流失")], family = "binomial")
+
+# 查看模型摘要
+summary(logistic_model2)
+```
+AIC (Akaike Information Criterion): 1999.6, which is lower compared to Model 1.
+
+```{r}
+predictions <- predict(logistic_model2, newdata = test_data[, selected_variables2], type = "response")
+predicted_classes <- ifelse(predictions > 0.5, 1, 0)
+
+# 计算准确率
+accuracy <- mean(predicted_classes == as.numeric(test_data$流失) - 1)
+cat("Accuracy:", accuracy, "\n")
+
+# 混淆矩阵
+confusion_matrix <- table(Predicted = predicted_classes, Actual = as.numeric(test_data$流失) - 1)
+print(confusion_matrix)
+
+# AUC-ROC 曲线
+roc_curve <- roc(as.numeric(test_data$流失) - 1, predictions)
+plot(roc_curve, main = "ROC Curve")
+auc_value <- auc(roc_curve)
+cat("AUC:", auc_value, "\n")
+```
+Accuracy: 0.9495268 - The accuracy remains the same as in Model 1. True Negatives (真负, TN) and False Negatives (假负, FN) are also consistent with Model 1.
+
+AUC (Area Under the Curve): 0.6141313 - This value is slightly lower compared to Model 1.
+
+Conclusion: Model 2 is superior in terms of AIC and is more parsimonious. Although the AUC is slightly lower, in practical applications, a higher accuracy and a lower AIC are often more important. Therefore, Model 2 is selected as the final model.
+
+The logistic regression equation for Model 2 is:
+
+log(P(Churned=0)/P(Churned=1))= −2.510851 − 0.005302 × Current Month’s Customer Happiness Index − 0.009637 × Change in Customer Happiness Index Compared to the Previous Month
+
+### d. Based on the prediction results from the previous step, rank the customers who have not yet churned (churned = 0) by their likelihood of churning, and provide a list of the top 100 user IDs with the highest probability of churning.
+
+```{r}
+# 从模型2中获取预测的对数几率
+predictions <- predict(logistic_model2, newdata = we[, selected_variables2], type = "link")
+
+# 将对数几率转换为概率
+probabilities <- 1 / (1 + exp(-predictions))
+
+# 筛选出尚未流失的客户
+non_churn_customers <- we[we$流失 == 0, ]
+
+# 将概率添加到 we 数据表中
+we$probability <- probabilities
+
+# 按流失概率从高到低排序
+sorted_non_churn_customers <- we[order(-we$probability), ]
+
+# 提取前100名用户ID, 并按流失概率排序
+top_100_users <- sorted_non_churn_customers[1:100, c("客户ID", "probability")]
+top_100_users_sorted <- top_100_users[order(-top_100_users$probability), ]
+
+# 打印前100名用户ID
+print(top_100_users_sorted)
+```
+
+
+
+
+
+
+
+
